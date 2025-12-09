@@ -11,7 +11,7 @@ const pStyle = `line-height:1.6667;margin-top:4.5pt;margin-bottom:0pt;`;
 // Base style for most spans
 const baseSpanStyle = `font-size:11pt;font-family:Lato;color:#212121ff;background-color:transparent;font-weight:400;font-style:normal;font-variant:normal;text-decoration:none;vertical-align:baseline;white-space:pre;white-space:pre-wrap;`;
 
-// Style for bolded spans (like the suffix)
+// Style for bolded spans (like the prefix)
 const boldSpanStyle = baseSpanStyle.replace('font-weight:400', 'font-weight:700');
 
 // Style for the link's inner span
@@ -58,8 +58,8 @@ async function getHtmlFromClipboard() {
     }
 }
 
-function shouldShowSuffix() {
-    const checkbox = document.getElementById('showSuffixCheckbox');
+function shouldShowPrefix() {
+    const checkbox = document.getElementById('showPrefixCheckbox');
 
     // Return the checkbox's state, or true if it can't be found (a safe default)
     return checkbox ? checkbox.checked : true;
@@ -85,19 +85,19 @@ function joinWithAnd(arr) {
 }
 
 function splitTitle(text) {
-    // If it starts with [ ... ], extract suffix + title
+    // If it starts with [ ... ], extract prefix + title
     const match = text.match(/^\[(.*?)\]\s*(.*)$/);
 
     if (match) {
         return {
-            suffix: match[1],
+            prefix: match[1],
             title: match[2]
         };
     }
 
-    // No suffix → whole text is title
+    // No prefix → whole text is title
     return {
-        suffix: null,
+        prefix: null,
         title: text
     };
 }
@@ -111,7 +111,7 @@ function formatRowData(rowData) {
     const subLink = rowData[8];
     const hasSub = !(subLink.length === 0 || subLink === 'None');
     const sub_emoji = hasSub ? '✔️' : '❌';
-    const { suffix, title } = splitTitle(fullTitle);
+    const { prefix, title } = splitTitle(fullTitle);
     const { name, initials } = parseTitleAndMembers(title);
     const escapedName = escapeHtml(name);
 
@@ -123,9 +123,9 @@ function formatRowData(rowData) {
     const datePart = `<span style="${baseSpanStyle}">${sub_emoji} ${escapeHtml(date)} . </span>`;
 
     // Part 2: Suffix (if it exists)
-    let suffixPart = '';
-    if (shouldShowSuffix() && suffix) {
-        suffixPart = `<span style="${boldSpanStyle}">${escapeHtml(suffix)}</span><span style="${baseSpanStyle}"> - </span>`;
+    let prefixPart = '';
+    if (shouldShowPrefix() && prefix) {
+        prefixPart = `<span style="${boldSpanStyle}">${escapeHtml(prefix)}</span><span style="${baseSpanStyle}"> - </span>`;
     }
 
     // Part 3: Main Title / Link
@@ -151,7 +151,7 @@ function formatRowData(rowData) {
     }
 
     // --- Assemble the final string ---
-    const allParts = [datePart, suffixPart, titlePart, membersPart].join('');
+    const allParts = [datePart, prefixPart, titlePart, membersPart].join('');
 
     // return `<li dir="ltr" style="${liStyle}" aria-level="1"><p dir="ltr" style="${pStyle}" role="presentation">${allParts}</p></li>`;
     // return `<p dir="ltr" style="${pStyle}">${allParts}</p></li>`;
