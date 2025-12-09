@@ -108,54 +108,81 @@ function formatRowData(rowData) {
     const date = rowData[1] || '';
     const fullTitle = rowData[2] || 'Untitled';
     const officialLinks = Array.isArray(rowData[4]) ? rowData[4] : [];
+    const yarrLinks = Array.isArray(rowData[5]) ? rowData[5] : [];
     const subLink = rowData[8];
+
     const hasSub = !(subLink.length === 0 || subLink === 'None');
     const sub_emoji = hasSub ? '✔️' : '❌';
+
     const { prefix, title } = splitTitle(fullTitle);
+
     const { name, initials } = parseTitleAndMembers(title);
     const escapedName = escapeHtml(name);
 
-    let mainLink = (subLink && Array.isArray(subLink) && subLink.length === 1) ? subLink[0] : (officialLinks.length === 1 ? officialLinks[0] : null);
+    let mainLink = null;
+    let sourceLinksToProcess = [];
 
-    // --- Build the HTML parts as separate spans ---
-
-    // Part 1: Emoji and Date
-    const datePart = `<span style="${baseSpanStyle}">${sub_emoji} ${escapeHtml(date)} . </span>`;
-
-    // Part 2: Suffix (if it exists)
-    let prefixPart = '';
-    if (shouldShowPrefix() && prefix) {
-        prefixPart = `<span style="${boldSpanStyle}">${escapeHtml(prefix)}</span><span style="${baseSpanStyle}"> - </span>`;
-    }
-
-    // Part 3: Main Title / Link
-    let titlePart = '';
-    if (mainLink) {
-        // NOTE: No target="_blank" and the link style is on the inner span
-        const linkHref = mainLink.url.includes('://') ? mainLink.url : `https://${mainLink.url}`; // Ensure protocol
-        titlePart = `<a href="${linkHref}" style="text-decoration:none;"><span style="${linkSpanStyle}">${escapedName}</span></a>`;
+    if (subLink && Array.isArray(subLink) && subLink.length === 1) {
+        mainLink = subLink[0];
+        sourceLinksToProcess = [...officialLinks, ...yarrLinks];
+    } else if (officialLinks.length === 1 && yarrLinks.length === 0) {
+        mainLink = officialLinks[0];
+        sourceLinksToProcess = [...yarrLinks];
+    } else if (yarrLinks.length === 1 && officialLinks.length === 0) {
+        mainLink = yarrLinks[0];
+        sourceLinksToProcess = [...officialLinks];
     } else {
-        // If no link, it's just plain text in a base span
-        titlePart = `<span style="${baseSpanStyle}">${escapedName}</span>`;
+        sourceLinksToProcess = [...officialLinks, ...yarrLinks];
     }
 
-    // Part 4: Members (if they exist)
     let membersPart = '';
     if (initials) {
         const formattedMembersArray = initials.split(/[\s,&]+/).filter(Boolean).map(init => MEMBER_MAP[init.trim()] || init.trim());
         const formattedMembers = joinWithAnd(formattedMembersArray);
         if (formattedMembers) {
-            // The hyphen and members are in separate spans
-            membersPart = `<span style="${baseSpanStyle}"> - </span><span style="${membersSpanStyle}">${escapeHtml(formattedMembers)}</span>`;
+            // membersPart = ` - <span class="member-names">${escapeHtml(formattedMembers)}</span>`;
+            membersPart = ` - <span style="${membersSpanStyle}">${escapeHtml(formattedMembers)}</span>`;
         }
     }
 
-    // --- Assemble the final string ---
-    const allParts = [datePart, prefixPart, titlePart, membersPart].join('');
+    let prefixElement = ''
+    if (shouldShowPrefix() && prefix) {
+        prefixElement = `<span style="font-weight:700;">${escapeHtml(prefix)}</span> - `;
+    }
 
-    // return `<li dir="ltr" style="${liStyle}" aria-level="1"><p dir="ltr" style="${pStyle}" role="presentation">${allParts}</p></li>`;
-    // return `<p dir="ltr" style="${pStyle}">${allParts}</p></li>`;
-    return allParts;
+    let titleElement = escapedName;
+    if (mainLink != null) {
+        titleElement = `<a href="${mainLink.url}" target="_blank">${escapedName}</a>`;
+    }
+
+    let separateLinksPart = '';
+    if (sourceLinksToProcess.length > 0) {
+        const linkParts = [];
+        const ytSearchLinks = sourceLinksToProcess.filter(link => link.text === 'YouTube Search');
+        const otherSourceLinks = sourceLinksToProcess.filter(link => link.text !== 'YouTube Search');
+
+        if (otherSourceLinks.length > 0) {
+            if (otherSourceLinks.length === 1 && ytSearchLinks.length === 0) {
+                const link = otherSourceLinks[0];
+                const text = mainLink != null ? 'Source' : link.text;
+                linkParts.push(`<a href="${link.url}" target="_blank">${text}</a>`);
+            } else {
+                otherSourceLinks.forEach((link, index) => {
+                    const text = mainLink != null ? `Source ${index + 1}` : link.text;
+                    linkParts.push(`<a href="${link.url}" target="_blank">${text}</a>`);
+                });
+            }
+        }
+
+        ytSearchLinks.forEach(link => {
+            linkParts.push(`<a href="${link.url}" target="_blank">${escapeHtml(link.text)}</a>`);
+        });
+
+        if (linkParts.length > 0) {
+            separateLinksPart = ` - <span style="${linkSpanStyle}">${linkParts.join(' | ')}</span>`;
+        }
+    }
+    return `${sub_emoji} ${escapeHtml(date)} . ${prefixElement}${titleElement}${separateLinksPart}${membersPart}`;
 }
 
 async function copyOutputToClipboard2() {
