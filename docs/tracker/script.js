@@ -205,10 +205,11 @@ function makeUrl(name, url)
 
 function parseLinkArray(links, out_urls, single_name, multi_name)
 {
-    console.log('Parsing links');
+    console.log('Parsing links', single_name, multi_name);
     console.log(links);
     if (links.length === 1)
     {
+        console.log('single link');
         out_urls.push(makeUrl(single_name, links[0]));
     }
     else
@@ -245,7 +246,8 @@ function NEW_formatRowData(rowData) {
     const urls = [];
 
     let hasMainLink = (subLinks.length === 1 && !isNamedUrl(subLinks[0]))
-        || (subLinks.length === 0 && otherLinks.length === 0 && (sourceLinks.length === 1 && !sourceLinks[0]));
+        || (subLinks.length === 0 && otherLinks.length === 0 && (sourceLinks.length === 1 && !isNamedUrl(sourceLinks[0])));
+    console.log('has main link', hasMainLink)
 
     // parse the sub links
     parseLinkArray(subLinks, urls, title === "" ? "Sub" : title, 'Part');
