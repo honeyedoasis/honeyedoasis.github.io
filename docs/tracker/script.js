@@ -171,13 +171,18 @@ function normalize(str) {
 }
 
 function isNamedUrl(link) {
-    if (!link || typeof link !== "object") return false;
+    console.log('checking named url', link)
+    if (!link || typeof link !== "object")
+    {
+        return false;
+    }
 
     const text = normalize(link.text || "");
     const url = normalize(link.url || "");
 
     if (!text || !url) return false;
-
+    console.log(text)
+    console.log(url)
     return text !== url;
 }
 
@@ -222,16 +227,28 @@ function parseLinkArray(links, out_urls, single_name, multi_name)
     }
 }
 
+function toArray(value)
+{
+    if (value == null || value === "")
+    {
+        return [];
+    }
+
+    return Array.isArray(value) ? value : [value];
+}
+
 function NEW_formatRowData(rowData) {
     if (rowData.length < 9 || (!rowData[1] && !rowData[2])) return null;
 
     const date = rowData[headers.indexOf('Date')] || '';
     const title = rowData[headers.indexOf('Eng Title')];
-    const sourceLinks = Array.isArray(rowData[headers.indexOf('Official Link')]) ? rowData[headers.indexOf('Official Link')] : [];
-    const subLinks = Array.isArray(rowData[headers.indexOf('Eng Sub')]) ? rowData[headers.indexOf('Eng Sub')] : [];
-    const otherLinks = Array.isArray(rowData[headers.indexOf('Other Link')]) ? rowData[headers.indexOf('Other Link')] : [];
+    const sourceLinks = toArray(rowData[headers.indexOf('Official Link')])
+    const subLinks = toArray(rowData[headers.indexOf('Eng Sub')])
+    const otherLinks = toArray(rowData[headers.indexOf('Other Link')])
     const prefix = rowData[headers.indexOf('Channel')];
     const initials = rowData[headers.indexOf('Members')];
+
+    console.log(sourceLinks, subLinks, otherLinks);
 
     // 1. Determine Subbed Status
     const hasSub = subLinks && subLinks.length > 0 && subLinks !== 'None';
@@ -247,7 +264,8 @@ function NEW_formatRowData(rowData) {
 
     let hasMainLink = (subLinks.length === 1 && !isNamedUrl(subLinks[0]))
         || (subLinks.length === 0 && otherLinks.length === 0 && (sourceLinks.length === 1 && !isNamedUrl(sourceLinks[0])));
-    console.log('has main link', hasMainLink)
+    console.log(subLinks.length, otherLinks.length, sourceLinks.length);
+    console.log('has main link', hasMainLink, subLinks.length === 1 && !isNamedUrl(subLinks[0]), sourceLinks.length === 1 && !isNamedUrl(sourceLinks[0]))
 
     // parse the sub links
     parseLinkArray(subLinks, urls, title === "" ? "Sub" : title, 'Part');
