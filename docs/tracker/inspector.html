@@ -1,0 +1,65 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: sans-serif; margin: 30px; }
+    #pasteZone { border: 2px dashed #cc0000; padding: 40px; font-size: 20px; text-align: center; margin-bottom: 20px; outline: none; }
+    #pasteZone:focus { background-color: #fff9f9; }
+    #output { background: #f4f4f4; padding: 15px; border: 1px solid #ddd; white-space: pre-wrap; word-wrap: break-word; max-height: 400px; overflow-y: auto; }
+    button { padding: 12px 24px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; margin-bottom: 20px; font-weight: bold; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+<h2>1. Copy from Google Sites, Paste Below</h2>
+<div contenteditable="true" id="pasteZone">Click here and press CTRL+V (or CMD+V)</div>
+
+<h2>2. Copy it back to Clipboard</h2>
+<button id="copyBtn" disabled>Copy Raw HTML to Clipboard</button>
+<span id="status" style="color: green; margin-left: 10px; font-weight: bold;"></span>
+
+<h3>Raw HTML Payload:</h3>
+<pre id="output">Waiting for paste...</pre>
+
+<script>
+  let currentHtmlPayload = "";
+  let currentPlainPayload = "";
+
+  // 1. Intercept the Paste
+  document.getElementById('pasteZone').addEventListener('paste', function(e) {
+    e.preventDefault(); // Stop visual pasting
+
+    currentHtmlPayload = e.clipboardData.getData('text/html');
+    currentPlainPayload = e.clipboardData.getData('text/plain');
+
+    document.getElementById('output').textContent = currentHtmlPayload || "No HTML found.";
+
+    if (currentHtmlPayload) {
+      document.getElementById('copyBtn').disabled = false;
+    }
+  });
+
+  // 2. The Copy Button logic
+  document.getElementById('copyBtn').addEventListener('click', async function() {
+    try {
+      const htmlBlob = new Blob([currentHtmlPayload], { type: 'text/html' });
+      const textBlob = new Blob([currentPlainPayload], { type: 'text/plain' });
+
+      const clipboardItem = new ClipboardItem({
+        'text/html': htmlBlob,
+        'text/plain': textBlob
+      });
+
+      await navigator.clipboard.write([clipboardItem]);
+
+      const status = document.getElementById('status');
+      status.textContent = "Copied! Now try pasting back into Google Sites.";
+      setTimeout(() => status.textContent = "", 4000);
+    } catch (error) {
+      console.error("Clipboard write failed:", error);
+      alert("Failed to copy. (Ensure you are not running this from a file:// URL in some strict browsers, use localhost if needed).");
+    }
+  });
+</script>
+</body>
+</html>
