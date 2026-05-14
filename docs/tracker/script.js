@@ -113,7 +113,7 @@ function generateSitesListHTML(itemsList) {
 }
 
 function generateSNSRows(itemsList) {
-    let html = `<ul style="${STYLES.listContainer}">\n`;
+    let html = ""//`<ul style="${STYLES.listContainer}">\n`;
     // let plainText = "";
 
     itemsList.forEach((row, index) =>
@@ -142,13 +142,13 @@ function generateSNSRows(itemsList) {
         console.log(row);
         console.log('FULL TITLE', fullTitle)
 
-        html += `<li style="${STYLES.listItem}"><span style="${STYLES.baseText}">${fullTitle}</span><span style="${STYLES.baseText}"></li>\n`;
-        // html += `<div>- ${fullTitle}</div>\n`;
+        // html += `<!--<li style="${STYLES.listItem}"><span style="${STYLES.baseText}">${fullTitle}</span><span style="${STYLES.baseText}"></li>\n-->`;
+        html += `<div>- ${fullTitle}</div>\n`;
 
         console.log(html);
     });
 
-    html += `</ul>`;
+    // html += `</ul>`;
     console.log(html);
     return html;
 }
@@ -415,10 +415,10 @@ function makeSiteBlock(sheetRows)
     const groupedRows = {};
     sheetRows.forEach(row =>
     {
-        if (row.status !== "Unpublished")
-        {
-            return;
-        }
+        // if (row.status !== "Unpublished")
+        // {
+        //     return;
+        // }
 
         if (!groupedRows[row.category]) {
             groupedRows[row.category] = [];
@@ -459,10 +459,10 @@ function makeSNSBlock(sheetRows)
     const groupedDate = {};
     sheetRows.forEach(rowData =>
     {
-        if (rowData.status !== "SNS")
-        {
-            return;
-        }
+        // if (rowData.status !== "SNS")
+        // {
+        //     return;
+        // }
 
         const date = rowData.date
         if (!groupedDate[date])
@@ -503,7 +503,7 @@ function makeSNSBlock(sheetRows)
     if (snsHtml.length > 0)
     {
         outputElement.innerHTML += `<h2 class="category-header">SNS</h2>`;
-        outputElement.innerHTML += snsHtml.join('<br><br>');
+        outputElement.innerHTML += snsHtml.join('<br>');
         resultContainer.style.display = 'block';
     }
 }
