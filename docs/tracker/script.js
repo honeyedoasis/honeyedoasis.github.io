@@ -3,6 +3,18 @@
     SY: 'Seoyeon', CY: 'Chaeyoung', NG: 'Nagyung', JH: 'Jiheon'
 };
 
+const MEMBER_ORDER = [
+    'SR',
+    'HY',
+    'GY',
+    'JW',
+    'JS',
+    'SY',
+    'CY',
+    'NG',
+    'JH'
+]
+
 const headers = [
     "status",
     "date",
@@ -273,6 +285,29 @@ function NEW_formatRowData(rowData)
     };
 }
 
+function reorderMembers(inputString) {
+    // Split by comma, trim spaces, and filter out any empty strings
+    const names = inputString
+        .split(',')
+        .map(name => name.trim())
+        .filter(name => name.length > 0);
+
+    // Sort based on the index in MEMBER_ORDER.
+    // Names not found are pushed to the end (indexOf returns -1 -> treated as Infinity)
+    const sortedNames = names.sort((a, b) => {
+        const indexA = MEMBER_ORDER.indexOf(a);
+        const indexB = MEMBER_ORDER.indexOf(b);
+        // Use a large number for missing names to put them last,
+        // while preserving their relative order (stable sort).
+        const orderA = indexA === -1 ? Infinity : indexA;
+        const orderB = indexB === -1 ? Infinity : indexB;
+        return orderA - orderB;
+    });
+
+    // Join back with a comma and a space
+    return sortedNames.join(', ');
+}
+
 function parseGoogleSheetHtml(htmlString) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlString, "text/html");
@@ -306,6 +341,8 @@ function parseGoogleSheetHtml(htmlString) {
                 }
             }
         });
+
+        rowData.members = reorderMembers(rowData.members)
 
         return rowData;
     });
@@ -378,6 +415,11 @@ function makeSiteBlock(sheetRows)
     const groupedRows = {};
     sheetRows.forEach(row =>
     {
+        if (row.status !== "Unpublished")
+        {
+            return;
+        }
+
         if (!groupedRows[row.category]) {
             groupedRows[row.category] = [];
         }
@@ -385,6 +427,7 @@ function makeSiteBlock(sheetRows)
     });
 
     const finalHtmlParts = [];
+    finalHtmlParts.push(`<h2>Unpublished</h2>`);
     for (const category in groupedRows)
     {
         const rowsForCategory = groupedRows[category];
@@ -416,6 +459,11 @@ function makeSNSBlock(sheetRows)
     const groupedDate = {};
     sheetRows.forEach(rowData =>
     {
+        if (rowData.status !== "SNS")
+        {
+            return;
+        }
+
         const date = rowData.date
         if (!groupedDate[date])
         {
