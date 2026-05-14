@@ -1,22 +1,41 @@
-﻿// --- YOUR PROVIDED FUNCTIONS ---
-const MEMBER_MAP = {
+﻿const MEMBER_MAP = {
     SR: 'Saerom', HY: 'Hayoung', GY: 'Gyuri', JW: 'Jiwon', JS: 'Jisun',
     SY: 'Seoyeon', CY: 'Chaeyoung', NG: 'Nagyung', JH: 'Jiheon'
 };
 
 const headers = [
-    "Website",
-    "Date",
-    "Channel",
-    "Eng Title",
-    "Members",
-    "Category",
-    "Official Link",
-    "Eng Sub",
-    "Other Link",
-    "Twitter",
-    "Kor Title"
-]
+    "status",
+    "date",
+    "boldPrefix",
+    "mainText",
+    "members",
+    "category",
+    "sourceLink",
+    "engLink",
+    "namedLinks",
+    "korTitle",
+    "aiTranslation",
+    "fromispediaUrl",
+    "notes",
+];
+
+class SheetRow {
+    constructor() {
+        this.status = "";
+        this.date = "";
+        this.boldPrefix = "";
+        this.mainText = "";
+        this.members = "";
+        this.category = "";
+        this.sourceLink = [];
+        this.engLink = [];
+        this.namedLinks = [];
+        this.korTitle = "";
+        this.aiTranslation = "";
+        this.fromispediaUrl = "";
+        this.notes = "";
+    }
+}
 
 const STYLES = {
     listContainer: "margin: 0; padding-left: 24px;",
@@ -81,83 +100,45 @@ function generateSitesListHTML(itemsList) {
     return { html, plainText };
 }
 
-async function NEW_copyOutputToClipboard2() {
-    const copyButton = document.getElementById('copyButton');
+function generateSNSRows(itemsList) {
+    let html = `<ul style="${STYLES.listContainer}">\n`;
+    // let plainText = "";
 
-    try {
-        const sheetHtml = await getHtmlFromClipboard();
-        if (sheetHtml) {
-            const parsedRows = parseGoogleSheetHtml(sheetHtml);
-
-            // Step 1: Group rows by category
-            const groupedRows = {};
-            parsedRows.forEach(rowData => {
-                if (rowData.length < 4 || (!rowData[1] && !rowData[2])) return;
-
-                const category = rowData[3] || 'Uncategorized';
-                if (!groupedRows[category]) {
-                    groupedRows[category] = [];
-                }
-                groupedRows[category].push(rowData);
-            });
-
-            // Step 2: Build the final HTML per category group
-            const finalHtmlParts = [];
-            const finalPlainParts = [];
-
-            for (const category in groupedRows) {
-                const rowsForCategory = groupedRows[category];
-
-                // Convert sheet rows into our new dictionary format
-                const dictList = rowsForCategory
-                    .map(rowData => NEW_formatRowData(rowData))
-                    .filter(item => item !== null); // Filter out invalid rows
-
-                if (dictList.length > 0) {
-                    // If you ever want the Category Header back, uncomment this:
-                    // finalHtmlParts.push(`<h3 class="category-header">${escapeHtml(category)}</h3>`);
-
-                    // Generate the <ul> block for this specific category
-                    const generatedBlock = generateSitesListHTML(dictList);
-                    finalHtmlParts.push(generatedBlock.html);
-                    finalPlainParts.push(generatedBlock.plainText);
-                }
-            }
-
-            if (finalHtmlParts.length > 0) {
-                // Join categories with a break
-                const htmlToCopy = finalHtmlParts.join('<br>');
-                const textToCopy = finalPlainParts.join('\n\n');
-
-                if (typeof resultContainer !== 'undefined') resultContainer.style.display = 'block';
-
-                const htmlBlob = new Blob([htmlToCopy], { type: 'text/html' });
-                const textBlob = new Blob([textToCopy], { type: 'text/plain' });
-                const clipboardItem = new ClipboardItem({
-                    'text/html': htmlBlob,
-                    'text/plain': textBlob,
-                });
-
-                await navigator.clipboard.write([clipboardItem]);
-
-                // Feedback
-                if (copyButton) {
-                    const originalText = copyButton.textContent;
-                    copyButton.textContent = 'Copied!';
-                    copyButton.disabled = true;
-                    setTimeout(() => {
-                        copyButton.textContent = originalText;
-                        copyButton.disabled = false;
-                    }, 2000);
-                }
-            } else {
-                alert("Could not find any valid data rows to format.");
-            }
+    itemsList.forEach((row, index) =>
+    {
+        // html += `<li style="${STYLES.listItem}">`;
+        // html += `<span style="${STYLES.baseText}">${row.date} . </span>`;
+        let fullTitle = '';
+        if (row.boldPrefix && row.mainText)
+        {
+            fullTitle = `[${row.boldPrefix}] ${row.mainText}`;
         }
-    } catch (err) {
-        console.error('Failed to copy content: ', err);
-        alert('Could not copy to clipboard. Your browser might not support this feature or you may need to grant permission.');
-    }
+        else if (row.boldPrefix)
+        {
+            fullTitle = row.boldPrefix;
+        }
+        else if (row.mainText)
+        {
+            fullTitle = row.mainText;
+        }
+
+        if (row.members)
+        {
+            fullTitle += ` (${row.members})`;
+        }
+
+        console.log(row);
+        console.log('FULL TITLE', fullTitle)
+
+        html += `<li style="${STYLES.listItem}"><span style="${STYLES.baseText}">${fullTitle}</span><span style="${STYLES.baseText}"></li>\n`;
+        // html += `<div>- ${fullTitle}</div>\n`;
+
+        console.log(html);
+    });
+
+    html += `</ul>`;
+    console.log(html);
+    return html;
 }
 
 function normalize(str) {
@@ -227,26 +208,15 @@ function parseLinkArray(links, out_urls, single_name, multi_name)
     }
 }
 
-function toArray(value)
+function NEW_formatRowData(rowData)
 {
-    if (value == null || value === "")
-    {
-        return [];
-    }
-
-    return Array.isArray(value) ? value : [value];
-}
-
-function NEW_formatRowData(rowData) {
-    if (rowData.length < 9 || (!rowData[1] && !rowData[2])) return null;
-
-    const date = rowData[headers.indexOf('Date')] || '';
-    const title = rowData[headers.indexOf('Eng Title')];
-    const sourceLinks = toArray(rowData[headers.indexOf('Official Link')])
-    const subLinks = toArray(rowData[headers.indexOf('Eng Sub')])
-    const otherLinks = toArray(rowData[headers.indexOf('Other Link')])
-    const prefix = rowData[headers.indexOf('Channel')];
-    const initials = rowData[headers.indexOf('Members')];
+    const date = rowData.date;
+    const title = rowData.mainText;
+    const sourceLinks = rowData.sourceLink
+    const subLinks = rowData.engLink
+    const otherLinks = rowData.namedLinks
+    const prefix = rowData.boldPrefix;
+    const initials = rowData.members;
 
     console.log(sourceLinks, subLinks, otherLinks);
 
@@ -307,16 +277,37 @@ function parseGoogleSheetHtml(htmlString) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlString, "text/html");
     const rows = doc.querySelectorAll('tr');
+
     return Array.from(rows).map(row => {
         const cells = row.querySelectorAll('td');
-        return Array.from(cells).map(cell => {
-            const links = cell.querySelectorAll('a');
-            if (links.length > 0) {
-                return Array.from(links).map(link => ({ text: link.textContent.trim(), url: link.href }));
-            } else {
-                return cell.textContent.trim();
+
+        // 1. Create a new instance of your class
+        const rowData = new SheetRow();
+
+        Array.from(cells).forEach((cell, index) => {
+            if (index < headers.length) {
+                const headerKey = headers[index];
+                const links = cell.querySelectorAll('a');
+
+                // 2. The dynamic assignment still works perfectly
+                if (links.length > 0)
+                {
+                    rowData[headerKey] = Array.from(links).map(link => ({
+                        text: link.textContent.trim(),
+                        url: link.href
+                    }));
+                }
+                else
+                {
+                    if (cell.textContent.trim() !== "")
+                    {
+                        rowData[headerKey] = cell.textContent.trim();
+                    }
+                }
             }
         });
+
+        return rowData;
     });
 }
 
@@ -382,19 +373,107 @@ function splitTitle(text) {
     };
 }
 
+function makeSiteBlock(sheetRows)
+{
+    const groupedRows = {};
+    sheetRows.forEach(row =>
+    {
+        if (!groupedRows[row.category]) {
+            groupedRows[row.category] = [];
+        }
+        groupedRows[row.category].push(row);
+    });
+
+    const finalHtmlParts = [];
+    for (const category in groupedRows)
+    {
+        const rowsForCategory = groupedRows[category];
+        const dictList = rowsForCategory.map(rowData => NEW_formatRowData(rowData))
+
+        if (dictList.length > 0)
+        {
+            finalHtmlParts.push(`<h3 class="category-header">${escapeHtml(category)}</h3>`);
+            const generatedBlock = generateSitesListHTML(dictList);
+            finalHtmlParts.push(generatedBlock.html);
+        }
+    }
+
+    if (finalHtmlParts.length > 0)
+    {
+        // We can join with an empty string here because the <h3> and <ul> tags
+        // handle block spacing naturally on the page.
+        outputElement.innerHTML = finalHtmlParts.join('');
+        resultContainer.style.display = 'block';
+    }
+    else
+    {
+        alert("Could not find any valid data rows to format.");
+    }
+}
+
+function makeSNSBlock(sheetRows)
+{
+    const groupedDate = {};
+    sheetRows.forEach(rowData =>
+    {
+        const date = rowData.date
+        if (!groupedDate[date])
+        {
+            groupedDate[date] = [];
+        }
+
+        groupedDate[date].push(rowData);
+    });
+
+    // Step 2: Build the final HTML with headers for each group
+    const snsHtml = [];
+    for (const date in groupedDate)
+    {
+        const rows = groupedDate[date];
+
+        const chunked = [];
+        for (let i = 0; i < rows.length; i += 4) {
+            chunked.push(rows.slice(i, i + 4));
+        }
+
+        console.log('CHUNKS')
+        console.log(chunked);
+
+        chunked.forEach((chunk, index) =>
+        {
+            console.log(chunk)
+            snsHtml.push(`📅 ${escapeHtml(date)}`);
+
+            let generatedBlock = generateSNSRows(chunk);
+            generatedBlock += `<br>🔗<a href="https://www.fromispedia.com/">https://www.fromispedia.com</a><br>`;
+            generatedBlock += `<br>#fromis_9 #프로미스나인<br>`;
+
+            snsHtml.push(generatedBlock);
+        });
+    }
+
+    if (snsHtml.length > 0)
+    {
+        outputElement.innerHTML += `<h2 class="category-header">SNS</h2>`;
+        outputElement.innerHTML += snsHtml.join('<br><br>');
+        resultContainer.style.display = 'block';
+    }
+}
+
 const pasteButton = document.getElementById('pasteAndFormatButton');
 const resultContainer = document.getElementById('resultContainer');
 const outputElement = document.getElementById('output');
 const copyButton = document.getElementById('copyButton');
 
-if (copyButton) {
-    copyButton.addEventListener('click', NEW_copyOutputToClipboard2);
-    // copyButton.addEventListener('click', testing);
-} else {
-    console.warn('The "Copy to Clipboard" button with id="copyButton" was not found in the HTML.');
-}
+// if (copyButton) {
+//     copyButton.addEventListener('click', NEW_copyOutputToClipboard2);
+//     // copyButton.addEventListener('click', testing);
+// } else {
+//     console.warn('The "Copy to Clipboard" button with id="copyButton" was not found in the HTML.');
+// }
 
-pasteButton.addEventListener('click', async () => {
+pasteButton.addEventListener('click', async () =>
+{
     pasteButton.textContent = 'Processing...';
     pasteButton.disabled = true;
     resultContainer.style.display = 'none';
@@ -403,48 +482,8 @@ pasteButton.addEventListener('click', async () => {
         const sheetHtml = await getHtmlFromClipboard();
         if (sheetHtml) {
             const parsedRows = parseGoogleSheetHtml(sheetHtml);
-
-            // Step 1: Group rows by category
-            const groupedRows = {};
-            parsedRows.forEach(rowData => {
-                if (rowData.length < 4 || (!rowData[1] && !rowData[2])) return; // Skip invalid rows
-
-                const category = rowData[headers.indexOf("Category")] || '⚠️NO CATEGORY⚠️';
-                if (!groupedRows[category]) {
-                    groupedRows[category] = [];
-                }
-                groupedRows[category].push(rowData);
-            });
-
-            // Step 2: Build the final HTML with headers for each group
-            const finalHtmlParts = [];
-            for (const category in groupedRows) {
-
-                // Convert sheet rows into our new dictionary format
-                const rowsForCategory = groupedRows[category];
-                const dictList = rowsForCategory
-                    .map(rowData => NEW_formatRowData(rowData))
-                    .filter(item => item !== null); // Filter out invalid rows
-
-                // Add the category header and the new list format
-                if (dictList.length > 0) {
-                    // Add the category header
-                    finalHtmlParts.push(`<h3 class="category-header">${escapeHtml(category)}</h3>`);
-
-                    // Generate the perfectly formatted <ul> block
-                    const generatedBlock = generateSitesListHTML(dictList);
-                    finalHtmlParts.push(generatedBlock.html);
-                }
-            }
-
-            if (finalHtmlParts.length > 0) {
-                // We can join with an empty string here because the <h3> and <ul> tags
-                // handle block spacing naturally on the page.
-                outputElement.innerHTML = finalHtmlParts.join('');
-                resultContainer.style.display = 'block';
-            } else {
-                alert("Could not find any valid data rows to format.");
-            }
+            makeSiteBlock(parsedRows);
+            makeSNSBlock(parsedRows);
         }
     } catch (error) {
         console.error('An unexpected error occurred:', error);
