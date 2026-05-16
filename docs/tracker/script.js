@@ -51,7 +51,7 @@ class SheetRow {
 
 const STYLES = {
     listContainer: "margin: 0; padding-left: 24px;",
-    listItem: "list-style-type: square; font-size: 11pt; font-family: Arial, sans-serif; color: #000; margin-bottom: 0;",
+    listItem: "list-style-type: square; font-size: 11pt; font-family: Arial, sans-serif; color: #000; margin-top: 0pt; margin-bottom: 0; line-height: 1.39;",
     baseText: "font-family: 'Lato', sans-serif; color: #212121;",
     boldText: "font-family: 'Lato', sans-serif; color: #212121; font-weight: bold;",
     linkWrapper: "text-decoration: none;",
@@ -430,7 +430,9 @@ function makeSiteBlock(sheetRows)
     finalHtmlParts.push(`<h2>Unpublished</h2>`);
     for (const category in groupedRows)
     {
-        const rowsForCategory = groupedRows[category];
+        let rowsForCategory = groupedRows[category];
+        rowsForCategory.sort((a, b) => Number(a.date) - Number(b.date));
+
         const dictList = rowsForCategory.map(rowData => NEW_formatRowData(rowData))
 
         if (dictList.length > 0)
