@@ -198,6 +198,11 @@ function makeUrl(name, url)
         italics = true;
     }
 
+    if (name.includes('Source'))
+    {
+        italics = true;
+    }
+
     return { name: name, url: url.url, italics: italics };
 }
 
