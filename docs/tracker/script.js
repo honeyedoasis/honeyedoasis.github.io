@@ -1,12 +1,12 @@
 ﻿const MEMBER_MAP = {
-    SR: 'Saerom', HY: 'Hayoung', GY: 'Gyuri', JW: 'Jiwon', JS: 'Jisun',
+    SR: 'Saerom', HY: 'Hayoung', GR: 'Gyuri', JW: 'Jiwon', JS: 'Jisun',
     SY: 'Seoyeon', CY: 'Chaeyoung', NG: 'Nagyung', JH: 'Jiheon'
 };
 
 const MEMBER_ORDER = [
     'SR',
     'HY',
-    'GY',
+    'GR',
     'JW',
     'JS',
     'SY',
